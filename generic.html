@@ -1,0 +1,313 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Gacha Game Analysis</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<h1>Gacha Game Analysis</h1>
+						<p></p>
+					</header>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Content -->
+							<section id="content" class="main">
+								<span class="image main"><img src="images/pic04.jpg" alt="" /></span>
+								<h2>Introduction</h2>
+								<p>I'm a big fan of gacha games and have been playing them a lot. I also noticed how quickly this industry is growing in popularity and success, so I decided to dive deep into the data I could find online and analyze it.
+
+								</p>
+								<h2>Questions to Answer</h2>
+								<p>
+									1. Most succesfull games on market<br>
+									2. What regions perform the best <br>
+									3. Amount of games on the market<br>
+									4. Does releasing new games effect the revenue of existing games<br>
+									5. Montly increase/decrease in revenue<br>
+								</pre>
+								<p>
+									<h2>Data Scraping</h2>
+									<p>
+										I got data from <a href="https://www.gacharevenue.com/revenue">here</a>. Page contained JavaScript, so I had to manually download the code and then combine dataframes in one 
+
+									</p>
+									<div class="code-container">
+										<pre><code>
+import pandas as pd
+from bs4 import BeautifulSoup
+import requests
+import smtplib
+import seaborn as sns
+import matplotlib.pyplot as plt
+import re
+import emoji
+import cvs
+										</code></pre>
+									</div>
+								</p>
+								<p>
+									Here's the process of scraping and cleaning data so it's ready to go into a dataframe 
+								</p>
+								<div class="code-container">
+									<pre><code>
+file_path = r'C:PAHNAME.html'
+
+with open(file_path, 'r', encoding='utf-8') as file:
+	page = file.read()
+
+soup1 = BeautifulSoup(page, 'html.parser')
+soup = BeautifulSoup(soup1.prettify(), 'html.parser')
+data = soup.find('class'=="cursor-pointer transition-opacity hover:opacity-60 cursor-pointer").get_text()
+data.strip()
+data = data.replace('\n', '')
+data = data.replace('GACHAREVENUE', '').replace('GACHA', '').replace('Recap', '').replace('REVENUE','').replace('Search','').replace('Explore','').replace('Login','').replace('August 2nd, 2024','').replace('Controls','').replace('Filters','').replace('Region','',1)
+data = data.replace(',','.').replace('                       ',',').replace('🌐','Global').replace('☠️','$0').replace('🇨🇳','China').replace('🇺🇸','USA').replace('🇯🇵','Japan').replace('🇰🇷','Korea')
+data = data.strip()[10:]
+def insert_na(text, delimiter=','):
+	parts = data.split(delimiter)
+	i = 0
+	while i < len(parts):
+		if parts[i].strip() == 'NEW':
+			parts.insert(i + 3, ' NA')
+			i += 3
+		i += 1
+	result = delimiter.join(parts)
+	return result
+data = insert_na(data)
+data = 'Rank,' + data
+def convert_to_rows(text, delimiter=','):
+	parts = text.split(delimiter)
+	rows = []
+	current_row = []
+
+	for part in parts:
+		stripped_part = part.strip()
+		if stripped_part and (stripped_part[0].isdigit() or stripped_part[0] == '-' or stripped_part == 'NEW'):
+			if current_row:
+				rows.append(current_row)
+			current_row = [stripped_part]
+		else:
+			current_row.append(stripped_part)
+	
+	if current_row:
+		rows.append(current_row)
+
+	return rows
+
+rows = convert_to_rows(data)
+
+def strip_rows(rows):
+	stripped_rows = [[element.strip() for element in row] for row in rows]
+	return stripped_rows
+stripped_rows = strip_rows(rows)
+
+for row in stripped_rows:
+	print(row)
+def add_nan_before_dollar(rows):
+	updated_rows = []
+	for row in rows:
+		dollar_count = sum(1 for element in row if '$' in element)
+		if dollar_count < 2:
+			updated_row = []
+			for element in row:
+				if '$' in element:
+					updated_row.append('NaN')
+				updated_row.append(element)
+			updated_rows.append(updated_row)
+		else:
+			updated_rows.append(row)
+	return updated_rows
+
+rows = convert_to_rows(data)
+
+stripped_rows = strip_rows(rows)
+
+final_rows = add_nan_before_dollar(stripped_rows)
+
+for row in final_rows:
+	print(row)
+def strip_rows(final_rows):
+	stripped_rows = [[element.strip() for element in row] for row in final_rows]
+	return stripped_rows
+stripped_rows = strip_rows(final_rows)
+for row in stripped_rows:
+	print(row)
+
+def save_to_csv(final_rows, file_path):
+	with open(file_path, 'w', newline='', encoding='UTF8') as file:
+		writer = csv.writer(file)
+		writer.writerows(final_rows)
+file_path = r'C:\PATHNAME.csv'
+save_to_csv(rows, file_path)
+										
+									</code></pre>
+								</div>
+								<p>
+									Now I combine it into the table
+								</p>
+								
+								<div class="code-container">
+									<pre><code>
+df = pd.read_csv(r"PATHNAME.csv")
+pd.set_option('display.max_rows', 10)
+pd.reset_option('display.max_columns')
+df
+df2 = pd.read_csv(r"FILENAME.csv")
+df2 = df2.drop(columns=['Rank'])
+df2['Game'] = df2['Game'].str.strip()
+df2['Region'] = df2['Region'].str.strip()
+df2 = df2.merge(df, how = 'outer', on = ['Game','Region'])
+
+....
+
+df11 = pd.read_csv(r"PATHNAME.csv")
+df11 = df11.drop(columns=['Rank'])
+df11['Game'] = df11['Game'].str.strip()
+df11['Region'] = df11['Region'].str.strip()
+df11 = df11.merge(df10, how = 'outer', on = ['Game','Region'])
+df11.to_csv(r"FILENAME.csv", index=False)
+
+									</code></pre>
+								</div>
+								<p>
+									I clean my table so it's usable for future analysis 
+								</p>
+								<div class="code-container">
+									<pre><code>
+pd.set_option('display.max_columns', 38)
+pd.set_option('display.width', 1000)
+pd.set_option('display.expand_frame_repr', False)
+df = df11
+df.columns = df.columns.str.strip()
+df = df.reindex(sorted(df.columns), axis=1)
+df = df.drop(columns=['Aug 2023_y','Dec 2023_y','Feb 2024_y','Jan 2024_y','Jul 2023_y','Jun 2023_y','Jun 2024_y','Mar 2023_y','Mar 2024_y','May 2023_y','May 2024_y','Nov 2023_y','Oct 2023_y','Sep 2023_y'])
+df = df.rename(columns={'Apr 2023_x': '2023 Apr', 'Apr 2024_x': '2024 Apr', 
+						'Aug 2023_x' : '2023 Aug', 'Dec 2022' : '2022 Dec', 
+						'Dec 2023_x' : '2023 Dec', 'Feb 2023_y' : '2023 Feb',
+						'Feb 2024_x' : '2024 Feb', 'Jan 2023_y' : '2023 Jan', 
+						'Jan 2024_x' : '2024 Jan', 'Mar 2023_x' : '2023 Mar', 
+						'Mar 2024_x' : '2024 Mar', 'May 2023_x' : '2023 May' ,
+						'May 2024_x' : '2024 May', 'Nov 2023_x' : '2023 Nov', 
+						'Oct 2023_x' : '2023 Oct', 'Sep 2023_x' : '2023 Sep'})
+fixed_columns = ['Region', 'Game']
+columns_2022 = sorted([col for col in df.columns if col.startswith('2022')])
+columns_2023 = sorted([col for col in df.columns if col.startswith('2023')])
+columns_2024 = sorted([col for col in df.columns if col.startswith('2024')])
+
+final_order = fixed_columns + columns_2022 + columns_2023 + columns_2024
+
+dft = df[final_order]
+data_order = ['Region', 'Game', '2022 Dec', '2023 Jan', '2023 Feb', '2023 Mar', 
+					'2023 Apr', '2023 May', '2023 Jun', '2023 Jul', '2023 Aug',
+					'2023 Sep', '2023 Oct', '2023 Nov', '2023 Dec', '2024 Jan',
+					'2024 Feb', '2024 Mar', '2024 Apr', '2024 May', '2024 Jun' , '2024 Jul']
+dft1 = dft[data_order]
+dftd.columns
+clean = dft1.columns[2:]
+
+dft1[clean] = dft1[clean].replace({r'\$': ''}, regex=True)
+clean = dft2.columns[2:]
+
+dft2[clean] = dft2[clean].replace({r'\s': ''}, regex=True)
+dft1 = dft1.fillna(0)
+numeric_df = dft3.select_dtypes(include='number')
+dft3['Total'] = numeric_df.sum(axis=1)
+convert_columns = dft3.columns[2:]
+dft3[convert_columns] = dft3[convert_columns].replace('[^0-9]','')
+dft3.to_csv(r"C:\FILENAME.csv", index=False)
+									</code></pre>
+								</div>
+								<h2>Data Analysis</h2>
+								<p>
+									The first chart illustrates the revenue trends for the top five gacha games from December 2022 to March 2024. These games include Fate/Grand Order, Genshin Impact, Honkai: Star Rail, NIKKE, and Uma Musume: Pretty Derby. Each line represents the monthly revenue in millions, providing insight into the volatility and seasonality of revenue across different titles.
+								</p>
+							
+						
+							<img src="images/Chart1.png" alt="Centered Image" style="display: block; margin: auto;">
+							<p>
+								The second chart compares the total revenue generated across different regions, with a breakdown of July 2024's contribution to the total. Japan and the Global market dominate the revenue share, with China following closely. Korea and the USA have significantly lower contributions.
+<br>
+Japan and Global Markets: Show similar trends with Japan slightly leading. The July 2024 spike highlights a potential game update or event that captured audience attention.<br>
+China: Despite being third in total revenue, it shows consistent performance with a noticeable contribution in July 2024.<br>
+Korea and USA: These markets show lower total revenue, indicating either smaller player bases or less spending power.
+							</p>
+							<img src="images/Chart2.png" alt="Centered Image" style="display: block; margin: auto;">
+							<p>
+								The release month data highlights the busiest periods for game releases. December 2022 and January 2024 stand out with the highest number of releases, suggesting these months are strategically chosen for launching new content, possibly to align with holiday seasons or major events.
+								<br>
+								January 2024: This month saw a high number of releases, and existing games experienced mixed impacts. Honkai: Star Rail and Genshin Impact maintained steady revenue, possibly indicating that new releases did not significantly detract from the appeal of these established titles.
+<br>
+August 2023: A high number of releases this month correlated with a revenue dip for Fate/Grand Order and Uma Musume: Pretty Derby, suggesting that new titles might have drawn attention away from these games.
+							</p>
+							<img src="images/chart3.png" alt="Centered Image" style="display: block; margin: auto;">
+<br>
+							<p>
+								Other metrics are available through my project in Power BI based on my Data. <br>
+								- Genshin Impact and Honkai: Star Rail are leading the market in terms of total revenue, as shown in the first dashboard. These games consistently generate high revenue across all regions, reflecting their strong global appeal and player engagement. <br>
+- In specific regions like Japan, Uma Musume: Pretty Derby and Fate/Grand Order dominate, showcasing the importance of regional preferences and the effectiveness of localized content strategies. <br>
+- The Global and Japan regions are the highest revenue generators, as seen in the pie chart and the region-specific dashboards. These regions contribute significantly to the overall market revenue, highlighting their strategic importance for game developers. <br>
+- China also plays a major role, particularly for games like Genshin Impact and Honkai: Star Rail. However, regions like Korea and the USA contribute less, suggesting potential areas for growth or different market dynamics.<br>
+- The correlation between new releases and revenue dips for certain games highlights the competitive pressure in the market, where only the most popular titles can sustain their earnings despite new entries. <br>
+- The dashboards show that monthly revenue fluctuates significantly for most games, driven by factors such as in-game events, content updates, and market competition.
+For example, Uma Musume: Pretty Derby and Honkai: Star Rail show spikes in specific months, likely due to successful in-game events or updates that re-engaged the player base.
+							</p>
+							<video controls="controls" width="1000" height="600" name="Video Name">
+								<source src="images/Video.MOV" >
+							  </video>
+							
+
+							</section>
+						
+
+					</div>
+
+				<!-- Footer -->
+				<footer id="footer">
+					<section>
+						
+					</section>
+					<section>
+						<h2>Contacts</h2>
+						<dl class="alt">
+							<dt>Address</dt>
+							<dd> Miami, FL &bull; USA</dd>
+							<dt>Phone</dt>
+							<dd>(305) 724-2357 </dd>
+							<dt>Email</dt>
+							<dd><a href="#">suzuri1515@gmail.com</a></dd>
+						</dl>
+						<ul class="icons">
+							<li><a href="#" class="icon brands fa-twitter alt"><span class="label">Twitter</span></a></li>
+							<li><a href="#" class="icon brands fa-facebook-f alt"><span class="label">Facebook</span></a></li>
+							<li><a href="#" class="icon brands fa-instagram alt"><span class="label">Instagram</span></a></li>
+							<li><a href="#" class="icon brands fa-github alt"><span class="label">GitHub</span></a></li>
+							<li><a href="#" class="icon brands fa-dribbble alt"><span class="label">Dribbble</span></a></li>
+						</ul>
+					</section>
+					<p class="copyright">&copy; Diana Dubrovska </p>
+				</footer>
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
