@@ -1,0 +1,271 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Breast Cancer Diagnosis</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<h1>Breast Cancer Diagnosis</h1>
+						<p></p>
+					</header>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Content -->
+							<section id="content" class="main">
+								<span class="image main"><img src="images/pic04.jpg" alt="" /></span>
+								<h2>Introduction</h2>
+								<p>In this project, we aim to develop a machine learning model capable of predicting breast cancer diagnosis based on patient data. Breast cancer is one of the most common cancers worldwide, and early detection is critical for improving survival rates. Using a dataset of diagnostic measurements, we will build a neural network to classify tumors as either benign or malignant.
+<br>
+									The project will guide you through the complete data science pipeline, including data preprocessing, model building, training, and evaluation. By the end, we will demonstrate the model’s effectiveness and discuss its potential applications in medical diagnostics, showcasing the power of machine learning in contributing to healthcare advancements.
+
+								</p>
+							
+								<p>
+									<h2>Pipeline</h2>
+									<p>
+										After setting up our environment, we load the breast cancer dataset into a pandas DataFrame. This dataset contains various diagnostic measurements used to predict breast cancer
+									</p>
+									<div class="code-container">
+										<pre><code>
+import pandas as pd
+from matplotlib import pyplot as plt
+import seaborn as sns
+import numpy as np
+										</code></pre>
+									</div>
+									<div class="code-container">
+										<pre><code>
+df = pd.read_csv(r"..../breast_cancer_dataset.csv")
+print(df.describe().T)
+										</code></pre>
+									</div>
+									<img src="images/pic1.png" alt="Centered Image" style="display: block; margin: auto;">
+								</p>
+								<p>
+									Here we focus on cleaning and preparing the data for analysis. We remove any rows containing missing values. Then, we check the data types of each column to ensure they are correctly formatted
+								</p>
+								<div class="code-container">
+									<pre><code>
+
+	
+df = df.dropna()
+										
+									</code></pre>
+								</div>
+								<div class="code-container">
+									<pre><code>
+
+	
+df = df.rename(columns={'Diagnosis':'Label'})
+print(df.dtypes)
+										
+									</code></pre>
+								</div>
+								<img src="images/pic2.png" alt="Centered Image" style="display: block; margin: auto;">
+								<br>
+								<p>
+									Here, we visualize the distribution of the diagnosis labels in our dataset. This chart shows us the frequency of malignant (M) and benign (B) cases, giving us a quick overview of how balanced our dataset is.
+								</p>
+								
+								<div class="code-container">
+									<pre><code>
+sns.countplot(x="Label", data=df)
+
+									</code></pre>
+								</div>
+								<img src="images/pic3.png" alt="Centered Image" style="display: block; margin: auto;">
+								<br>
+								<p>
+									In this step, we focus on preparing the data for machine learning. First, we examine the distribution of the diagnosis labels to understand the balance between malignant and benign cases. We then encode the labels into numerical values. Next, we prepare the feature set 'x'
+
+								</p>
+								<div class="code-container">
+									<pre><code>
+print("Distribution of data: ", df['Label'].value_counts())
+
+y = df["Label"].values
+print("Labels before encoding are: ", np.unique(y))
+
+from sklearn.preprocessing import LabelEncoder
+labelencoder = LabelEncoder()
+Y = labelencoder.fit_transform(y) # M=1 and B=0
+print("Labels after encoding are: ", np.unique(Y))
+									</code></pre>
+								</div>
+								<div class="code-container">
+									<pre><code>
+X = df.drop(labels = ["Label", "ID"], axis=1) 
+print(X.describe().T)
+									</code></pre>
+								</div>
+								<img src="images/pic4.png" alt="Centered Image" style="display: block; margin: auto;">
+								<br>
+								<p>
+									In this step, we normalize the feature data to ensure that all the features are on the same scale
+								</p>
+								<div class="code-container">
+									<pre><code>
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+scaler.fit(X)
+X = scaler.transform(X)
+print(X)  
+									</code></pre>
+								</div>
+								<img src="images/pic5.png" alt="Centered Image" style="display: block; margin: auto;">
+								<br>
+								<p>
+									We split the dataset into training and testing sets.
+								</p>
+								
+<div class="code-container">
+	<pre><code>
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25, random_state=42)
+print("Shape of training data is: ", X_train.shape)
+print("Shape of testing data is: ", X_test.shape)
+	</code></pre>
+</div>
+<img src="images/pic6.png" alt="Centered Image" style="display: block; margin: auto;">
+<br>
+<p>
+	We build a neural network model using Keras. The first layer is a Dense layer with 16 neurons and a ReLU activation function, which will help the model learn complex patterns. We then add a Dropout layer to prevent overfitting by randomly dropping 20% of the neurons during training. 
+
+</p>
+<div class="code-container">
+	<pre><code>
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Dropout
+model = Sequential()
+model.add(Dense(16, input_dim=30, activation='relu')) 
+model.add(Dropout(0.2))
+model.add(Dense(1)) 
+model.add(Activation('sigmoid')) 
+ 
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+print(model.summary())
+	</code></pre>
+</div>
+<img src="images/pic7.png" alt="Centered Image" style="display: block; margin: auto;">
+<br>
+<p>
+	In this step, we train the neural network model using the training data. After training, we visualize the training and validation loss as well as accuracy over the epochs. The first plot shows how the loss decreases as the model learns, while the second plot illustrates how the accuracy improves over time
+
+</p>
+<div class="code-container">
+	<pre><code>
+history = model.fit(X_train, y_train, verbose=1, epochs=100, batch_size=64,
+		validation_data=(X_test, y_test))
+	</code></pre>
+</div>
+<div class="code-container">
+	<pre><code>
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+epochs = range(1, len(loss) + 1)
+plt.plot(epochs, loss, 'y', label='Training loss')
+plt.plot(epochs, val_loss, 'r', label='Validation loss')
+plt.title('Training and validation loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+plt.show()
+
+
+acc = history.history['accuracy']  #Use accuracy if acc doesn't work
+val_acc = history.history['val_accuracy']  #Use val_accuracy if acc doesn't work
+plt.plot(epochs, acc, 'y', label='Training acc')
+plt.plot(epochs, val_acc, 'r', label='Validation acc')
+plt.title('Training and validation accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+	</code></pre>
+</div>
+<img src="images/pic8.png" alt="Centered Image" style="display: block; margin: auto;">
+<img src="images/pic9.png" alt="Centered Image" style="display: block; margin: auto;">
+<br>
+<p>
+	In the final step, we evaluate the model's performance on the test data. Next, we calculate the confusion matrix, which provides a detailed breakdown of the model's classification results
+
+</p>
+<div class="code-container">
+	<pre><code>
+y_pred = model.predict(X_test)
+y_pred = (y_pred > 0.5)
+
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_pred)
+
+sns.heatmap(cm, annot=True)
+	</code></pre>
+</div>
+<img src="images/pic10.png" alt="Centered Image" style="display: block; margin: auto;">
+
+								<h2>Conclusion</h2>
+								<p>
+									Throughout the training process, we monitored the model's performance, ensuring it learned effectively without overfitting. The final evaluation using a confusion matrix demonstrated the model’s strong predictive capabilities, accurately distinguishing between benign and malignant cases. This project highlights the potential of neural networks in medical diagnostics, offering a glimpse into how such models can assist in early detection and treatment planning for breast cancer, ultimately contributing to better patient outcomes.
+
+								</p>
+							
+						
+						
+							
+
+							</section>
+						
+
+					</div>
+
+				<!-- Footer -->
+				<footer id="footer">
+					<section>
+						
+					</section>
+					<section>
+						<h2>Contacts</h2>
+						<dl class="alt">
+							<dt>Address</dt>
+							<dd> Miami, FL &bull; USA</dd>
+							<dt>Phone</dt>
+							<dd>(305) 724-2357 </dd>
+							<dt>Email</dt>
+							<dd><a href="#">suzuri1515@gmail.com</a></dd>
+						</dl>
+						<ul class="icons">
+							<li><a href="#" class="icon brands fa-twitter alt"><span class="label">Twitter</span></a></li>
+							<li><a href="#" class="icon brands fa-facebook-f alt"><span class="label">Facebook</span></a></li>
+							<li><a href="#" class="icon brands fa-instagram alt"><span class="label">Instagram</span></a></li>
+							<li><a href="#" class="icon brands fa-github alt"><span class="label">GitHub</span></a></li>
+							<li><a href="#" class="icon brands fa-dribbble alt"><span class="label">Dribbble</span></a></li>
+						</ul>
+					</section>
+					<p class="copyright">&copy; Diana Dubrovska </p>
+				</footer>
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
